@@ -31,7 +31,7 @@
                 <EditText android:id="@+id/login_et"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Login" />
+                    android:hint="Email" />
             </android.support.design.widget.TextInputLayout>
 
             <!-- Password Label -->
@@ -43,7 +43,7 @@
                 <EditText android:id="@+id/password_et"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
+                    android:inputType="text|textVisiblePassword"
                     android:hint="Password"/>
             </android.support.design.widget.TextInputLayout>
 
