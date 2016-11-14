@@ -1,18 +1,28 @@
 package uk.co.placona.rxlogin;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.jakewharton.rxbinding.view.RxView;
 import com.jakewharton.rxbinding.widget.RxTextView;
 
 import butterknife.BindDrawable;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
+import uk.co.placona.rxlogin.api.ApiClient;
+import uk.co.placona.rxlogin.api.ApiService;
+import uk.co.placona.rxlogin.models.LoginRequest;
+import uk.co.placona.rxlogin.models.User;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,25 +41,56 @@ public class MainActivity extends AppCompatActivity {
     @BindDrawable(android.R.drawable.presence_online)
     Drawable mValidField;
 
+    private static final String TAG = "MainActivity";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-ButterKnife.bind(this);
+        ApiService service = ApiClient.getRetrofitInstance().create(ApiService.class);
 
-Observable<CharSequence> loginObservable = RxTextView.textChanges(mLogin);
-loginObservable
-        .map(this::isValidLogin)
-        .subscribe(isValid -> mLogin.setCompoundDrawablesRelativeWithIntrinsicBounds(null,null, (isValid ? mValidField : mInvalidField), null));
+        ButterKnife.bind(this);
 
-Observable<CharSequence> passwordObservable = RxTextView.textChanges(mPassword);
-passwordObservable
-        .map(this::isValidPassword)
-        .subscribe(isValid -> mPassword.setCompoundDrawablesRelativeWithIntrinsicBounds(null,null, (isValid ? mValidField : mInvalidField), null));
+        Observable<CharSequence> loginObservable = RxTextView.textChanges(mLogin);
+        loginObservable
+                .map(this::isValidLogin)
+                .subscribe(isValid -> mLogin.setCompoundDrawablesRelativeWithIntrinsicBounds(null,null, (isValid ? mValidField : mInvalidField), null));
 
-Observable<Boolean> combinedObservables = Observable.combineLatest(loginObservable, passwordObservable, (o1, o2) -> isValidLogin(o1) && isValidPassword(o2));
-combinedObservables.subscribe(isVisible -> mLoginButton.setVisibility(isVisible ? View.VISIBLE : View.GONE));
+        Observable<CharSequence> passwordObservable = RxTextView.textChanges(mPassword);
+        passwordObservable
+                .map(this::isValidPassword)
+                .subscribe(isValid -> mPassword.setCompoundDrawablesRelativeWithIntrinsicBounds(null,null, (isValid ? mValidField : mInvalidField), null));
+
+        Observable<Boolean> combinedObservables = Observable.combineLatest(loginObservable, passwordObservable, (o1, o2) -> isValidLogin(o1) && isValidPassword(o2));
+        combinedObservables.subscribe(isVisible -> mLoginButton.setVisibility(isVisible ? View.VISIBLE : View.GONE));
+
+        // Listen to button clicks
+        RxView.clicks(mLoginButton).subscribe(aVoid -> {
+            mLoginButton.setEnabled(false);
+            LoginRequest loginRequest = new LoginRequest(mLogin.getText().toString(), mPassword.getText().toString());
+            Observable<User> call = service.login(loginRequest);
+            call.subscribeOn(Schedulers.newThread())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .map(User::getName)
+                    .subscribe(new Subscriber<String>() {
+                        @Override
+                        public void onCompleted() {
+
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(TAG, "onError: ", e.getCause());
+                        }
+
+                        @Override
+                        public void onNext(String s) {
+                            startActivity(new Intent(MainActivity.this, LoggedActivity.class));
+                        }
+                    });
+            //mLoginButton.setEnabled(false);
+        });
     }
 
     private boolean isValidPassword(CharSequence value) {
