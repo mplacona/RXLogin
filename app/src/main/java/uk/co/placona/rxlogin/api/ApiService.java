@@ -1,7 +1,9 @@
 package uk.co.placona.rxlogin.api;
 
-import retrofit2.Call;
+import retrofit2.Response;
 import retrofit2.http.Body;
+import retrofit2.http.Field;
+import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
 import retrofit2.http.Headers;
 import retrofit2.http.POST;
@@ -27,17 +29,21 @@ import uk.co.placona.rxlogin.models.User;
  */
 
 public interface ApiService {
-    @GET("/user")
-    Observable<User> user();
+    @GET("/api/user")
+    Observable<Response<User>> user();
 
-    @POST("/login")
+    @FormUrlEncoded
+    @POST("/api/login")
     @Headers("Require-Authentication: false")
-    Observable<User> login (@Body LoginRequest request);
+    Observable<Response<User>> login (
+            @Field("email") String login,
+            @Field("password") String password
+    );
 
-    @POST("/forgotPassword")
+    @POST("/api/forgotPassword")
     @Headers("Require-Authentication: false")
-    Observable<Void> forgotPassword(@Body ForgotPasswordRequest request);
+    Observable<Response<Void>> forgotPassword(@Body ForgotPasswordRequest request);
 
-    @GET("/logout")
-    Observable<Void> logout();
+    @GET("/api/logout")
+    Observable<Response<Void>> logout();
 }

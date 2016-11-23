@@ -13,9 +13,24 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
+        debug {
+            // Read local properties
+            Properties properties = new Properties()
+            properties.load(project.rootProject.file('dev.properties').newDataInputStream())
+            buildConfigField("String", "api_certificate", properties.getProperty('api.certificate'))
+            buildConfigField("String", "api_login", properties.getProperty('api.login'))
+            buildConfigField("String", "api_password", properties.getProperty('api.password'))
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            // Read production properties
+            Properties properties = new Properties()
+            properties.load(project.rootProject.file('production.properties').newDataInputStream())
+            buildConfigField("String", "api_certificate", properties.getProperty('api.certificate'))
+            buildConfigField("String", "api_login", properties.getProperty('api.login'))
+            buildConfigField("String", "api_password", properties.getProperty('api.password'))
         }
     }
     compileOptions {
@@ -39,6 +54,7 @@ dependencies {
 
     compile 'com.facebook.stetho:stetho:1.4.1'
     compile 'com.facebook.stetho:stetho-okhttp3:1.4.1'
+    compile 'com.squareup.okhttp3:okhttp:3.4.2'
 
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile 'com.squareup.retrofit2:converter-gson:2.1.0'

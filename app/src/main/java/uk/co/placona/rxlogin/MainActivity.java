@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.jakewharton.rxbinding.view.RxView;
 import com.jakewharton.rxbinding.widget.RxTextView;
@@ -15,6 +16,7 @@ import com.jakewharton.rxbinding.widget.RxTextView;
 import butterknife.BindDrawable;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import retrofit2.Response;
 import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
@@ -69,11 +71,10 @@ public class MainActivity extends AppCompatActivity {
         RxView.clicks(mLoginButton).subscribe(aVoid -> {
             mLoginButton.setEnabled(false);
             LoginRequest loginRequest = new LoginRequest(mLogin.getText().toString(), mPassword.getText().toString());
-            Observable<User> call = service.login(loginRequest);
+            Observable<Response<User>> call = service.login(loginRequest.getLogin(), loginRequest.getPassword());
             call.subscribeOn(Schedulers.newThread())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .map(User::getName)
-                    .subscribe(new Subscriber<String>() {
+                    .subscribe(new Subscriber<Response<User>>() {
                         @Override
                         public void onCompleted() {
 
@@ -81,12 +82,19 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onError(Throwable e) {
-                            Log.e(TAG, "onError: ", e.getCause());
+                            Log.e(TAG, "onError: " + e.getMessage());
+                            mLoginButton.setEnabled(true);
                         }
 
                         @Override
-                        public void onNext(String s) {
-                            startActivity(new Intent(MainActivity.this, LoggedActivity.class));
+                        public void onNext(Response<User> userResponse) {
+                            if(userResponse.code() == 200){
+                                startActivity(new Intent(MainActivity.this, LoggedActivity.class));
+                            }else{
+                                Toast.makeText(MainActivity.this, "Login failed", Toast.LENGTH_SHORT).show();
+                                mLoginButton.setEnabled(true);
+                            }
+
                         }
                     });
             //mLoginButton.setEnabled(false);

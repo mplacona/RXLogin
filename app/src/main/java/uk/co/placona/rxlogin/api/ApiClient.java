@@ -1,16 +1,19 @@
 package uk.co.placona.rxlogin.api;
 
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+
 import com.facebook.stetho.okhttp3.StethoInterceptor;
 
-import java.io.IOException;
-
-import okhttp3.Interceptor;
+import okhttp3.CertificatePinner;
+import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
+import uk.co.placona.rxlogin.BuildConfig;
 
 /**
  * Copyright (C) 2016 mplacona.
@@ -29,19 +32,31 @@ import retrofit2.converter.gson.GsonConverterFactory;
  */
 
 public class ApiClient {
-    private static final String BASE_URL = "http://demo9854024.mockable.io";
+    private static final String BASE_URL = "https://loginapi.androidsecurity.info/";
 
 
     public static Retrofit getRetrofitInstance() {
 
+        // Add certificate pinner
+        CertificatePinner certificatePinner = new CertificatePinner.Builder()
+                .add("loginapi.androidsecurity.info", BuildConfig.api_certificate)
+                .build();
+
         // Add network interceptor for Stetho
         OkHttpClient okClient = new OkHttpClient
             .Builder()
+            .certificatePinner(certificatePinner)
             .addNetworkInterceptor(new StethoInterceptor())
             .addInterceptor(chain -> {
                 Request request = chain.request();
-                request.newBuilder()
-                        .addHeader("Authorization", "YXJlIHlvdSBjdXJpb3VzIGVub3VnaCB0byBkZWNvZGUgdGhpcz8=").build();
+
+                if(request.header("Require-Authentication") == null){
+                    String credential = Credentials.basic(BuildConfig.api_login, BuildConfig.api_password);
+                    request = request.newBuilder()
+                            .addHeader("Authorization", credential)
+                            .build();
+                }
+
                 return chain.proceed(request);
             })
             .build();
@@ -53,4 +68,7 @@ public class ApiClient {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
     }
+
+
+
 }

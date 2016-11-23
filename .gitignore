@@ -166,3 +166,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Key properties file
+dev.properties
+production.properties
